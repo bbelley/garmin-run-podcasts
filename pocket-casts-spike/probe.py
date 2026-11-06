@@ -64,6 +64,16 @@ def read_secret(prompt):
             raise ProbeError("Run the probe from an interactive terminal for hidden input") from None
 
 
+def checked_token(token):
+    if not isinstance(token, str) or not token or any(c.isspace() for c in token):
+        raise ProbeError("Supply just the bearer token, without the 'Bearer ' prefix")
+    return token
+
+
+def read_bearer_token():
+    return checked_token(os.environ.get("POCKET_CASTS_TOKEN") or read_secret("Pocket Casts bearer token: "))
+
+
 def token_expiry(token):
     """Report the unverified expiry hint if this token happens to be a JWT."""
     try:
@@ -170,10 +180,9 @@ def main():
             email = input("Pocket Casts email: ").strip()
             password = read_secret("Pocket Casts password: ")
             token = request("/user/login", body={"email": email, "password": password}).get("token")
+            token = checked_token(token)
         else:
-            token = os.environ.get("POCKET_CASTS_TOKEN") or read_secret("Pocket Casts bearer token: ")
-        if not isinstance(token, str) or not token or any(c.isspace() for c in token):
-            raise ProbeError("Supply just the bearer token, without the 'Bearer ' prefix")
+            token = read_bearer_token()
 
         playlist = select_playlist(token, args.playlist, playlist_id)
         ordered = ordered_entries(playlist)
