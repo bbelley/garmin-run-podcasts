@@ -32,3 +32,5 @@ Local fixture checks passed for playlist order, request bodies, played state, an
 
 3. Confirm that the preview shows the intended episode and that its state is unplayed. Type `PLAYED` to send one update to `POST /sync/update_episode`. The test reads back the episode status even if the write response is uncertain. [Music Assistant played update](https://github.com/music-assistant/server/blob/dev/music_assistant/providers/pocketcasts/api_client.py)
 4. Refresh Pocket Casts on the phone. Check the episode's played state and whether it remains in the manual playlist and Up Next. Record the outcome with account details removed. If the test cannot verify the write, check the app before retrying.
+
+In a live test, the selected episode changed from `playingStatus` 1 to 3 while `playedUpTo` stayed at zero. After refreshing the web player, the episode's menu showed **Mark as unplayed** and **Remove from Up Next**. It remained in the manual playlist and Up Next. The phone view after sync still needs to be checked.

@@ -34,7 +34,8 @@ def main():
             raise ProbeError(f"Choose an unplayed episode. The selected episode is {before['state']}.")
 
         print(json.dumps({"playlist": playlist["title"], "before": before}, indent=2))
-        if input("Type PLAYED to mark only this episode as played: ").strip() != "PLAYED":
+        print("Type PLAYED to mark only this episode as played.")
+        if input().strip() != "PLAYED":
             print("Canceled before the write.")
             return 1
 
