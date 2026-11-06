@@ -12,14 +12,14 @@ This Audio Content Provider uses the native Garmin player. **Sync Now** download
    .\garmin-spike\build.ps1
    ```
 
-   The default is a [30-second public MP3 sample](https://soniqtools.com/test-audio-files). To test your Cloudflare workflow on the first run, upload a short clip with your existing uploader, then use its direct HTTPS MP3 enclosure URL. A clip of 30–90 seconds gives you time to test the controls. Enter the URL locally when prompted.
+   The default is a [30-second public MP3 sample](https://soniqtools.com/test-audio-files). For the longer test, choose a spoken clip from your existing Cloudflare uploader and use its direct HTTPS MP3 enclosure URL. A clip of 5–15 minutes gives you time to check resume and hear the end in one test. Enter the URL locally when prompted.
 
    ```powershell
    $mp3 = Read-Host 'Direct HTTPS MP3 URL'
    .\garmin-spike\build.ps1 -Mp3Url $mp3
    ```
 
-   Use a URL that the watch can fetch without a browser session. If it contains a signed query string, treat the resulting `.prg` as private because the URL is compiled into it. The spike reuses its cache on repeat syncs. Use a fresh install of this provider when switching sources so the prior clip cannot satisfy the new test.
+   Use a URL that the watch can fetch without a browser session. If it contains a signed query string, treat the resulting `.prg` as private because the URL is compiled into it. After installing a build for a different URL, run **Sync Now** to fetch the new clip. The old clip is removed after the new file is downloaded and matched to the configured URL. Repeat syncs for the same URL reuse that download. Older test builds need one refresh to associate the cache with a URL.
 4. The script creates and reuses `garmin-spike\developer_key.der` and writes `garmin-spike\bin\OUTBACK.prg`. Keep the local key for future builds. For VS Code, install Garmin's **Monkey C** extension, open `garmin-spike`, and run **Monkey C: Verify Installation**. Point the extension's developer-key setting at `developer_key.der`. The command-line build already creates the local source configuration VS Code uses.
 
 ## Sideload and run

@@ -40,9 +40,27 @@ class OutBacklogApp extends Application.AudioContentProviderApp {
 }
 
 function cachedClip() {
-    var refs = Media.getContentRefIter({:contentType => Media.CONTENT_TYPE_AUDIO});
-    var ref = refs == null ? null : refs.next();
+    var download = Application.Storage.getValue("clipDownload");
+    if (!(download instanceof Lang.Dictionary) || !LocalConfig.MP3_SOURCE.equals(download["source"])) {
+        return null;
+    }
+    var id = download["ref"];
+    if (!(id instanceof Lang.String)) {
+        return null;
+    }
+    var ref = cachedClipRefs()[id];
     return ref == null ? null : Media.getCachedContentObj(ref);
+}
+
+function cachedClipRefs() as Lang.Dictionary<Lang.String, Media.ContentRef> {
+    var refs = {} as Lang.Dictionary<Lang.String, Media.ContentRef>;
+    var iterator = Media.getContentRefIter({:contentType => Media.CONTENT_TYPE_AUDIO});
+    if (iterator != null) {
+        for (var ref = iterator.next(); ref != null; ref = iterator.next()) {
+            refs[ref.getId().toString()] = ref;
+        }
+    }
+    return refs;
 }
 
 function completionCount() {

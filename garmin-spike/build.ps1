@@ -55,9 +55,12 @@ if (-not (Test-Path -LiteralPath $KeyPath -PathType Leaf)) {
 }
 
 $config = Join-Path $PSScriptRoot 'source\LocalConfig.mc'
+$sourceFingerprint = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData(
+    [System.Text.Encoding]::UTF8.GetBytes($Mp3Url)))
 Set-Content -LiteralPath $config -Encoding utf8NoBOM -Value @"
 module LocalConfig {
     const MP3_URL = "$Mp3Url";
+    const MP3_SOURCE = "$sourceFingerprint";
 }
 "@
 

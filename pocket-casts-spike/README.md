@@ -18,7 +18,7 @@
 
 The probe uses `GET /user/playlists` and the lookup form of `POST /user/episode`, with a UUID as its entire body. `--login` also calls `POST /user/login`. These are unofficial account endpoints. This script has no playlist or episode mutation command.
 
-Local fixture checks passed for playlist order, request bodies, played state, and enclosure URL redaction. The live playlist endpoint returned HTTP 401 for an invalid token. An authenticated test using a web player token returned two episodes in order, both with `playingStatus` 3 and HTTPS enclosures. The token had an expiry hint. Enclosure playback and token renewal still need verification.
+Local fixture checks passed for playlist order, request bodies, played state, and enclosure URL redaction. The live playlist endpoint returned HTTP 401 for an invalid token. An authenticated test using a web player token returned two episodes in order, both with `playingStatus` 3 and HTTPS enclosures. The token had an expiry hint. A matching episode in the public catalog returned HTTP 206 with `audio/mpeg` from its publisher, and the first minute decoded on a desktop. Token renewal still needs verification.
 
 ## Verify one played-status write
 
