@@ -1,0 +1,4 @@
+<resources>
+    <string id="AppName">Out and Backlog</string>
+    <bitmap id="Icon" filename="icon.svg"/>
+</resources>
