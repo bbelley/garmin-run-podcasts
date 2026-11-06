@@ -44,8 +44,10 @@ An offline playback pass requires audible playback while a native Run is recordi
 
 For a long MP3, pause after a recognizable spoken cue several minutes in, reopen playback, and compare the audible position with that cue. Repeat after rebooting while the bookmark is still set. Check the audio even if the displayed timestamp looks correct. [Garmin ActiveContent API](https://developer.garmin.com/connect-iq/api-docs/Toybox/Media/ActiveContent.html)
 
-## Local verification
+## Verification
 
 Connect IQ 9.3.0 compiled and signed `bin\OUTBACK.prg` for `fr255sm` after SDK Manager installed the device profile. The build used the workspace SDK copy (`-SdkPath .\.spike-tools\sdk`) because the sandbox could not write the compiler cache in the SDK Manager installation. The public test clip returned HTTP 200 with `audio/mpeg` and an MP3 header.
 
-The first build downloaded the clip with HTTP 200 and played it on a Forerunner 255S Music. The watch log recorded pause and stop at 19 seconds with the count at zero. Reopening from the menu started at zero. Natural completion at 30 seconds increased the count to one, then the duplicate test slot started. The bookmark and single-slot playback need to be verified on the watch with the updated build.
+The first build downloaded the clip with HTTP 200 and played it on a Forerunner 255S Music. The watch log recorded pause and stop at 19 seconds with the count at zero. Reopening from the menu started at zero. Natural completion at 30 seconds increased the count to one, then the duplicate test slot started.
+
+With the updated build, the tester reported that the 30-second clip saved its playback position, resumed from the provider menu, and worked in **Test Next Track** mode. The watch loaded the update without a power cycle. The updated callback log, a saved offline Run, and bookmark and completion persistence through reboot still need to be checked. Use a longer spoken MP3 to verify that the audible resume position matches the bookmark several minutes into playback.
