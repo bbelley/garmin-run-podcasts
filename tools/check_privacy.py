@@ -1,6 +1,7 @@
 """Review staged files or outgoing commits before publishing this public repository."""
 
 import argparse
+import json
 import os
 from pathlib import Path
 import re
@@ -69,6 +70,15 @@ def private_values(root):
             if url.hostname != "soniqtools.com":
                 values.extend([match[1], url.hostname])
                 values.extend(unquote(part) for part in url.path.split("/") if len(part) >= 16)
+    cloudflare = root / ".spike-tools/cloudflare"
+    secrets = cloudflare / "secrets.json"
+    if secrets.exists():
+        data = json.loads(secrets.read_text(encoding="utf-8-sig"))
+        values.extend(value for value in data.values() if isinstance(value, str))
+    state = cloudflare / "current.json"
+    if state.exists():
+        data = json.loads(state.read_text(encoding="utf-8-sig"))
+        values.extend(data.get(name) for name in ("account_id", "database_id", "worker_name", "public_origin"))
     return [value for value in values if value and len(value) >= 8]
 
 

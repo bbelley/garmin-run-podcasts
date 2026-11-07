@@ -1,6 +1,7 @@
 """Exercise the public-repository privacy guard with synthetic data."""
 
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
 import tempfile
@@ -34,6 +35,20 @@ class ContentChecks(unittest.TestCase):
     def test_documentation_guids_and_synthetic_examples_are_allowed(self):
         self.assertEqual(privacy.scan_text("https://www8.garmin.com/manuals/webhelp/GUID-676967A0-1B23-4384-9BC9-76F3D643F1C8/page"), [])
         self.assertEqual(privacy.scan_text("00000000-0000-0000-0000-000000000001 reader@example.com"), [])
+
+    def test_known_cloudflare_credentials_and_account_config_are_included(self):
+        with tempfile.TemporaryDirectory(prefix="pacejams-private-values-") as directory:
+            root = Path(directory)
+            config = root / ".spike-tools/cloudflare"
+            config.mkdir(parents=True)
+            secret = "fixture-watch-" * 4
+            account = "fixture-account-value"
+            (config / "secrets.json").write_text(json.dumps({"PACEJAMS_WATCH_TOKEN": secret}))
+            (config / "current.json").write_text(json.dumps({"account_id": account}))
+            values = privacy.private_values(root)
+            self.assertIn(secret, values)
+            self.assertIn(account, values)
+            self.assertIn("known local private value", privacy.scan_text(secret, values))
 
 
 class GitChecks(unittest.TestCase):

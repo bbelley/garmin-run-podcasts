@@ -8,7 +8,7 @@ Run the suite with Node 24.4 or newer from the repository root.
 npm --prefix backend-core test
 ```
 
-The test suite uses synthetic episodes and an isolated database. It covers queue ordering and capacity, completion replay and persistence, failed source refreshes, and Pocket Casts delivery retries. The SQLite test adapter implements the D1 methods used by this library. A deployed D1 test is part of the integration work.
+The test suite uses synthetic episodes and an isolated database. It covers queue ordering and capacity, completion replay and persistence, failed source refreshes, and Pocket Casts delivery retries. The SQLite test adapter implements the D1 methods used by this library. The [Cloudflare integration](../cloudflare-worker/README.md) has also passed native local runtime and deployed D1 completion/replay checks.
 
 The source normalizers consume data already read by an adapter. `normalizePocketCasts(playlist, details)` uses the same `episodeOrder`, episode UUID, podcast UUID, `playingStatus`, and enclosure fields as the verified Python probe. `sizeBytes` is optional and should come from verified enclosure metadata. `normalizeUploads(feedKey, entries)` takes parsed RSS entries with `guid`, `title`, `enclosureUrl`, and optional `enclosureBytes`, `durationSeconds`, and `pinned` fields. The caller supplies a stable feed key. Original HTTPS enclosure URLs pass through intact.
 
@@ -32,9 +32,8 @@ The returned queue has `evictIds` for completed downloads and `retireAfterDownlo
 
 `deliverOne(store, adapter, now)` claims one due delivery with a fenced lease. The adapter implements `isPlayed(episodeUuid, podcastUuid)` and `markPlayed(episodeUuid, podcastUuid)`. Delivery reads played state before a write and after the attempt, including when the write response is lost. Transient failures use backoff and respect a supplied retry delay. An `auth_required` error holds delivery until `resumeDeliveries()` is called after reconnecting the account. Error details saved to the database use fixed categories. [Verified Pocket Casts write probe](../pocket-casts-spike/verify_played.py)
 
-Integration work follows the hardware checks and can reuse these tested boundaries.
+The live Worker now provides the source loaders, authenticated endpoint, encrypted renewable session, and deployed D1 storage. These boundaries guide the remaining integration work.
 
-1. Add live Pocket Casts and RSS loaders, using the verified refresh flow and existing Cloudflare feed. Check the uploader's metadata before choosing any new storage bindings.
-2. Wrap the service in an authenticated Worker endpoint with a bounded JSON body and a revocable watch token. Keep account credentials in private server-side storage and source loaders separate from the queue policy.
-3. Apply `schema.sql` to a local D1 instance and repeat the event, retry, and persistence checks through the Worker entry point.
-4. Connect the watch's pending event log, cache measurements, sequential downloads, and acknowledgement handling to the versioned response. Verify the complete path on the 255S Music before enabling scheduled delivery.
+1. Connect the watch's pending event log, cache measurements, sequential downloads, and acknowledgement handling to the versioned response.
+2. Verify the complete path on the 255S Music, including publisher audio, bookmarks, duplicate completions, interruption, cancellation, and low space.
+3. Enable completion-only delivery after the hardware checks; verify the account readback before considering scheduled retries.
