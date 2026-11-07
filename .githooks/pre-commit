@@ -1,0 +1,3 @@
+#!/bin/sh
+repo=$(git rev-parse --show-toplevel) || exit 1
+exec python "$repo/tools/check_privacy.py" --staged
