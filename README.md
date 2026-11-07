@@ -6,3 +6,21 @@ The [project plan](PROJECT_PLAN.md) starts with two independent feasibility chec
 
 - [Garmin watch spike](garmin-spike/README.md) covers building and signing for `fr255sm`, sideloading, testing offline during a recorded Run, and reading the callback log.
 - [Pocket Casts account probe](pocket-casts-spike/README.md) covers reading the manual **Run** playlist and checking its order, enclosure URLs, and played state.
+- [Backend core](backend-core/README.md) contains the locally tested queue policy, durable completion ledger, and Pocket Casts delivery outbox prepared for the Worker integration.
+
+The local checks run with Node 24.4 or newer and Python 3.10 or newer.
+
+```powershell
+npm --prefix backend-core test
+python tools/test_privacy.py
+```
+
+This public repository includes a privacy guard for staged files and every outgoing commit. It checks recognized credentials, private artifacts, account IDs, personal email addresses, and private values from the ignored Garmin source configuration. Reports identify the file and category. Review the staged diff alongside this check.
+
+Enable the included hooks once per checkout.
+
+```powershell
+git config core.hooksPath .githooks
+```
+
+Run `python tools/check_privacy.py --staged` before a commit and `python tools/check_privacy.py --outgoing origin/main` to review outgoing history manually. The Git hooks run those checks at commit and push time. Local signing keys, builds, private notes, and feed configuration belong in the ignored paths.
