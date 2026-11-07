@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
     <iq:application id="9a92252b87ca4e22aa74091ae7feb729" type="audio-content-provider-app"
-        entry="OutBacklogApp" name="@Strings.AppName" launcherIcon="@Drawables.Icon"
+        entry="PaceJamsApp" name="@Strings.AppName" launcherIcon="@Drawables.Icon"
         minSdkVersion="3.2.0">
         <iq:products><iq:product id="fr255sm"/></iq:products>
         <iq:permissions><iq:uses-permission id="Communications"/></iq:permissions>

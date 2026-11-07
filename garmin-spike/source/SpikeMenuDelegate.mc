@@ -20,7 +20,7 @@ class SpikeMenuDelegate extends WatchUi.Menu2InputDelegate {
                 Media.startPlayback(true);
                 break;
             case :status:
-                System.println("OBL status completions=" + completionCount());
+                System.println("PaceJams status completions=" + completionCount());
                 break;
         }
     }

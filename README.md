@@ -1,4 +1,4 @@
-# Out & Backlog
+# PaceJams
 
 A personal project for listening to Pocket Casts selections and uploaded MP3s offline on a Garmin Forerunner 255S Music. The goal is a single watch sync to update the queue, report finished episodes, and reclaim storage.
 

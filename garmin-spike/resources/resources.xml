@@ -1,4 +1,4 @@
 <resources>
-    <string id="AppName">Out and Backlog</string>
+    <string id="AppName">PaceJams</string>
     <bitmap id="Icon" filename="icon.svg"/>
 </resources>

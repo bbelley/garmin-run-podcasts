@@ -3,7 +3,7 @@ using Toybox.Lang;
 using Toybox.Media;
 using Toybox.WatchUi;
 
-class OutBacklogApp extends Application.AudioContentProviderApp {
+class PaceJamsApp extends Application.AudioContentProviderApp {
     function initialize() {
         AudioContentProviderApp.initialize();
     }
@@ -25,7 +25,7 @@ class OutBacklogApp extends Application.AudioContentProviderApp {
     }
 
     function configurationView() {
-        var menu = new WatchUi.Menu2({:title => "Out & Backlog"});
+        var menu = new WatchUi.Menu2({:title => WatchUi.loadResource(Rez.Strings.AppName) as Lang.String});
         var clip = cachedClip();
         menu.addItem(new WatchUi.MenuItem("Sync Now", "Wi-Fi", :sync, null));
         if (clip != null) {

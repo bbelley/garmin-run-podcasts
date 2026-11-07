@@ -30,13 +30,13 @@ class ClipContentDelegate extends Media.ContentDelegate {
                 Application.Storage.deleteValue("clipBookmark");
             }
         } else if (!_testNext && (event == Media.SONG_EVENT_PAUSE || event == Media.SONG_EVENT_STOP)
-            && position instanceof Lang.Number && position > 0) {
+            && position instanceof Lang.Number && position >= 0) {
             Application.Storage.setValue("clipBookmark", {
                 "ref" => contentRefId.toString(),
                 "seconds" => position
             });
         }
-        System.println("OBL song t=" + Time.now().value() + " event=" + event
+        System.println("PaceJams song t=" + Time.now().value() + " event=" + event
             + " position=" + position + " completions=" + completionCount());
     }
 }

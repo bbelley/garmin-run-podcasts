@@ -17,9 +17,9 @@ class ClipSyncDelegate extends Communications.SyncDelegate {
     }
 
     function onStartSync() {
-        System.println("OBL sync completions=" + completionCount());
+        System.println("PaceJams sync completions=" + completionCount());
         if (cachedClip() != null) {
-            System.println("OBL sync cache hit");
+            System.println("PaceJams sync cache hit");
             Communications.notifySyncComplete(null);
             return;
         }
@@ -38,7 +38,7 @@ class ClipSyncDelegate extends Communications.SyncDelegate {
         }
         _previousRefs = null;
         Communications.cancelAllRequests();
-        System.println("OBL sync canceled");
+        System.println("PaceJams sync canceled");
         Communications.notifySyncComplete(null);
     }
 
@@ -50,7 +50,7 @@ class ClipSyncDelegate extends Communications.SyncDelegate {
             return;
         }
         _previousRefs = null;
-        System.println("OBL download response=" + code);
+        System.println("PaceJams download response=" + code);
         if (code != 200) {
             Communications.notifySyncComplete("MP3 download failed (" + code + ")");
             return;
@@ -77,7 +77,7 @@ class ClipSyncDelegate extends Communications.SyncDelegate {
             try {
                 Media.deleteCachedItem(staleRefs[index]);
             } catch (exception) {
-                System.println("OBL old cache removal failed");
+                System.println("PaceJams old cache removal failed");
             }
         }
         Communications.notifySyncProgress(100);

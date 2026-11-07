@@ -66,7 +66,7 @@ module LocalConfig {
 
 $outDir = Join-Path $PSScriptRoot 'bin'
 New-Item -ItemType Directory -Path $outDir -Force | Out-Null
-$output = Join-Path $outDir 'OUTBACK.prg'
+$output = Join-Path $outDir 'PACEJAMS.prg'
 $jungle = Join-Path $PSScriptRoot 'monkey.jungle'
 & $monkeyc -v
 & $monkeyc -d fr255sm -f $jungle -y $KeyPath -o $output -w

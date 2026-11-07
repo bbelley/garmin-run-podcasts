@@ -14,7 +14,7 @@ class ClipIterator extends Media.ContentIterator {
             var seconds = savedClipPosition(_content);
             if (seconds > 0) {
                 _content = new Media.ActiveContent(_content.getContentRef(), _content.getMetadata(), seconds);
-                System.println("OBL resume requested=" + seconds);
+                System.println("PaceJams resume requested=" + seconds);
             }
         }
     }
@@ -25,6 +25,9 @@ class ClipIterator extends Media.ContentIterator {
         if (_testNext) {
             profile.playbackControls.add(Media.PLAYBACK_CONTROL_NEXT);
             profile.playbackControls.add(Media.PLAYBACK_CONTROL_PREVIOUS);
+        } else {
+            profile.playbackControls.add(Media.PLAYBACK_CONTROL_SKIP_BACKWARD);
+            profile.playbackControls.add(Media.PLAYBACK_CONTROL_SKIP_FORWARD);
         }
         return profile;
     }
