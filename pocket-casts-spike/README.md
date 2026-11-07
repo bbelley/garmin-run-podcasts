@@ -18,7 +18,21 @@
 
 The probe uses `GET /user/playlists` and the lookup form of `POST /user/episode`, with a UUID as its entire body. `--login` also calls `POST /user/login`. These are unofficial account endpoints. This script has no playlist or episode mutation command.
 
-Local fixture checks passed for playlist order, request bodies, played state, and enclosure URL redaction. The live playlist endpoint returned HTTP 401 for an invalid token. An authenticated test using a web player token returned two episodes in order, both with `playingStatus` 3 and HTTPS enclosures. The token had an expiry hint. A matching episode in the public catalog returned HTTP 206 with `audio/mpeg` from its publisher, and the first minute decoded on a desktop. Token renewal still needs verification.
+Local fixture checks passed for playlist order, request bodies, played state, and enclosure URL redaction. The live playlist endpoint returned HTTP 401 for an invalid token. An authenticated test using a web player token returned two episodes in order, both with `playingStatus` 3 and HTTPS enclosures. The token had an expiry hint. A matching episode in the public catalog returned HTTP 206 with `audio/mpeg` from its publisher, and the first minute decoded on a desktop.
+
+## Verify one session renewal
+
+If you use Google sign-in, add a Pocket Casts password to the same account through the official **Forgot password?** flow. Use the email associated with the existing account. [Pocket Casts SSO account passwords](https://support.pocketcasts.com/knowledge-base/single-sign-on-accounts-using-continue-with-google-or-continue-with-apple/)
+
+Run this in an interactive terminal from the repo root. Replace `Run` with the exact manual playlist name.
+
+```powershell
+python .\pocket-casts-spike\verify_renewal.py --playlist "Run"
+```
+
+The probe hides the password as you enter it. It signs in, reads the playlist, exchanges the refresh token once, and reads the same playlist with the new access token. It prints only verification results and the expiry hint. Password and tokens stay in process memory. The private login and refresh endpoints are based on a third-party implementation. [Reference auth flow](https://github.com/agisilaos/pocketcastsctl/blob/main/internal/authn/api.go)
+
+Five local fixture scenarios passed, covering renewal, optional refresh-token rotation, missing refresh credentials, an unchanged access token, and a failed playlist read after renewal. A live test also passed with the same playlist readable before and after the exchange. The server issued a different access token and reused the refresh token. Renewal after access-token expiry and recovery from an invalidated refresh token remain to be tested.
 
 ## Verify one played-status write
 
