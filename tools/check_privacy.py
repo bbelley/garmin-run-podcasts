@@ -38,6 +38,7 @@ def example_email(domain):
 
 def scan_text(text, private_values=()):
     reasons = {reason for reason, pattern in PATTERNS.items() if pattern.search(text)}
+    documentation_urls = set()
     if any(not example_email(match[1]) for match in EMAIL.finditer(text)):
         reasons.add("personal email")
     for match in URL.finditer(text):
@@ -48,8 +49,10 @@ def scan_text(text, private_values=()):
             continue
         if value.username or value.password or re.search(r"(?:^|&)(?:token|key|sig|signature|x-amz-signature|password)=", value.query, re.I):
             reasons.add("credential-bearing URL")
+        if value.hostname in DOC_HOSTS:
+            documentation_urls.add(match[0])
     # Device documentation contains public GUIDs. Near-zero fixture IDs are synthetic.
-    without_doc_urls = URL.sub(lambda match: "" if urlsplit(match[0]).hostname in DOC_HOSTS else match[0], text)
+    without_doc_urls = URL.sub(lambda match: "" if match[0] in documentation_urls else match[0], text)
     if any(not match[0].startswith("00000000-0000-0000-0000-") for match in UUID.finditer(without_doc_urls)):
         reasons.add("account or episode UUID")
     if any(value and value.lower() in text.lower() for value in private_values):

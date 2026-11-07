@@ -50,6 +50,10 @@ class ContentChecks(unittest.TestCase):
             self.assertIn(account, values)
             self.assertIn("known local private value", privacy.scan_text(secret, values))
 
+    def test_malformed_url_is_reported_without_crashing_the_review(self):
+        malformed = "https" + "://[invalid"
+        self.assertIn("malformed URL", privacy.scan_text(malformed))
+
 
 class GitChecks(unittest.TestCase):
     def test_staged_blob_is_checked_even_when_working_copy_is_cleaned(self):

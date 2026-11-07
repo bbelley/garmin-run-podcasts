@@ -1,6 +1,6 @@
 # PaceJams Cloudflare integration
 
-The Worker adds authenticated queue sync to the existing private RSS Worker and R2 bucket. Existing feed, cover, audio, and byte-range routes continue through the saved original handler. A D1 database stores the retained catalog, source snapshots, completion ledger, delivery outbox, and encrypted Pocket Casts session. The Garmin prototype still downloads its configured test clip; connecting it to this manifest is the next build step.
+The Worker adds authenticated queue sync to the existing private RSS Worker and R2 bucket. Existing feed, cover, audio, and byte-range routes continue through the saved original handler. A D1 database stores the retained catalog, source snapshots, completion ledger, delivery outbox, and encrypted Pocket Casts session. The [Garmin queue client](../garmin-spike/README.md#live-queue-build-and-watch-test) consumes this manifest and has passed local simulator checks; its physical-watch integration remains to be verified.
 
 The Worker is needed for account renewal, queue planning, and durable completion acknowledgements. R2 supplies an independent custom-audio source. Pocket Casts Files could become another source after a separate API/download feasibility check. Files currently cannot be added to a regular playlist. A new upload interface is deferred while the existing upload workflow works. [Pocket Casts Files](https://support.pocketcasts.com/knowledge-base/files/)
 

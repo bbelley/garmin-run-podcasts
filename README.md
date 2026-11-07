@@ -4,10 +4,10 @@ A personal project for listening to Pocket Casts selections and uploaded MP3s of
 
 The [project plan](PROJECT_PLAN.md) starts with two independent feasibility checks.
 
-- [Garmin watch spike](garmin-spike/README.md) covers building and signing for `fr255sm`, sideloading, testing offline during a recorded Run, and reading the callback log.
+- [Garmin app](garmin-spike/README.md) covers the live queue client, signed `fr255sm` builds, simulator checks, sideloading, and the remaining offline Run tests. The original one-clip mode remains available.
 - [Pocket Casts account probe](pocket-casts-spike/README.md) covers reading the manual **Run** playlist and checking its order, enclosure URLs, and played state.
 - [Backend core](backend-core/README.md) contains the locally tested queue policy, durable completion ledger, and Pocket Casts delivery outbox prepared for the Worker integration.
-- [Cloudflare integration](cloudflare-worker/README.md) adds the live authenticated manifest, existing R2 uploads, encrypted renewable Pocket Casts sessions, and D1 completion storage. The Garmin queue client is next.
+- [Cloudflare integration](cloudflare-worker/README.md) adds the live authenticated manifest, existing R2 uploads, encrypted renewable Pocket Casts sessions, and D1 completion storage. The queue client is ready for physical-watch validation.
 
 The local checks run with Node 24.4 or newer and Python 3.10 or newer.
 
