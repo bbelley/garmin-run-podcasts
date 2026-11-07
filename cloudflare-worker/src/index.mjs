@@ -6,27 +6,45 @@ import { SessionStore, validateSession } from "./session.mjs";
 import { loadUploads } from "./uploads.mjs";
 import { enrichUpcomingSizes } from "./media-size.mjs";
 import { authorized, HttpError, json, readJson } from "./http.mjs";
+import { BrowserSessions } from "./browser-session.mjs";
+import { connectAccount } from "./connect-account.mjs";
+import { setupAsset } from "./setup-page.mjs";
 
 export function integrate(legacy, uploadConfig, fetcher = fetch) {
     fetcher = fetcher.bind(globalThis);
     return {
         async fetch(request, env, ctx) {
             const url = new URL(request.url);
+            const asset = setupAsset(request);
+            if (asset) return asset;
             if (!url.pathname.startsWith("/v1/")) return legacy.fetch(request, env, ctx);
             try {
                 if (url.pathname === "/v1/health" && request.method === "GET") return json({ app: "PaceJams", protocol_version: 1 });
+                const browsers = new BrowserSessions(env.PACEJAMS_DB, env.PACEJAMS_ADMIN_TOKEN);
+                if (url.pathname === "/v1/setup/session" && request.method === "POST") {
+                    if (request.headers.get("Content-Type")?.split(";")[0].trim() !== "application/json") throw new HttpError(415, "json_required");
+                    const input = await readJson(request, 1024);
+                    const session = await browsers.redeem(request, input?.code);
+                    return json({ csrf_token: session.csrf_token }, 200, { "Set-Cookie": session.cookie });
+                }
                 const isAdmin = url.pathname.startsWith("/v1/admin/");
-                await authorized(request, isAdmin ? env.PACEJAMS_ADMIN_TOKEN : env.PACEJAMS_WATCH_TOKEN);
+                const auth = isAdmin ? await browsers.authorize(request) : await authorized(request, env.PACEJAMS_WATCH_TOKEN);
                 const store = new D1Store(env.PACEJAMS_DB);
                 const sessions = new SessionStore(env.PACEJAMS_DB, env.POCKET_CASTS_SESSION_KEY);
                 if (url.pathname === "/v1/admin/status" && request.method === "GET") {
                     const session = await sessions.get();
                     return json({ pocket_casts: !session ? "setup_required" : session.reconnectRequired ? "reconnect_required" : "connected",
-                        delivery: await store.deliveryStatus() });
+                        delivery: await store.deliveryStatus(), writeback_enabled: env.POCKET_CASTS_WRITEBACK_ENABLED === "true" });
+                }
+                if (url.pathname === "/v1/admin/browser-session" && request.method === "GET") return json({ csrf_token: auth.csrf_token });
+                if (url.pathname === "/v1/admin/browser-session" && request.method === "DELETE") {
+                    return json({ signed_out: true }, 200, { "Set-Cookie": await browsers.logout(auth) });
                 }
                 if (request.method !== "POST") throw new HttpError(405, "method_not_allowed");
                 if (request.headers.get("Content-Type")?.split(";")[0].trim() !== "application/json") throw new HttpError(415, "json_required");
-                const input = await readJson(request, 65536);
+                const input = await readJson(request, url.pathname === "/v1/admin/pocket-casts/connect" ? 8192 : 65536);
+                if (url.pathname === "/v1/admin/setup-links") return json(await browsers.createTicket());
+                if (url.pathname === "/v1/admin/pocket-casts/connect") return json(await connectAccount(input, sessions, store, fetcher));
                 if (url.pathname === "/v1/admin/pocket-casts/session") {
                     validateSession(input);
                     await sessions.connect(input);

@@ -48,7 +48,23 @@ Create the feed baseline once before the first deployment. Verification checks t
 
 The immutable original backup and `deployment.json` retain rollback versions. To undo a deployment, use Cloudflare's deployment/version rollback controls for the recorded previous version; keep the D1 database and R2 objects. Do not overwrite a newer externally changed Worker without reviewing it first.
 
-## Connect or reconnect Pocket Casts
+## Private browser setup
+
+Open the private account/status page with the local helper. It uses the existing admin credential internally; you do not need to copy any token.
+
+```powershell
+python cloudflare-worker/open_setup.py
+```
+
+The helper opens a single-use setup link in the default browser. The link expires in five minutes, and the page removes its code from the address bar before API requests. The root admin credential never enters the browser. A redeemed link creates an hour-long setup session with a Secure, HttpOnly, SameSite=Strict cookie. Setup access can be revoked by signing out; rotating the admin credential also invalidates existing links and browser sessions. The database stores keyed hashes of link/session tokens. Forged proofs are rejected before database lookups. Mutating browser requests require the same origin and a session-specific CSRF value. [Cookie attributes](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie)
+
+The page displays connection status, waiting/delivered completion counts, and whether played-status delivery is enabled. **Check connection** forces renewal and reads the selected playlist. **Connect Pocket Casts** accepts the existing account email, Pocket Casts password, and exact manual playlist name. This browser flow sends the password over HTTPS through your Worker to Pocket Casts for sign-in; PaceJams does not persist it or the email. The browser clears the password field after submission. Renewable tokens are encrypted in D1 only after sign-in, playlist selection, and renewal/read succeed. Rejected credentials or a missing playlist leave the stored session unchanged. This is a password-based connection to the unofficial account endpoints, not Pocket Casts OAuth. Production setup/admin access requires HTTPS; loopback HTTP is allowed for isolated local tests.
+
+Use the Pocket Casts password added to the existing Google/Apple account, as in the verified local probe. **Sign out of setup** revokes that browser session while leaving the watch's account connection intact. Public `/setup` pages contain no account details until authenticated. The page loads its own scripts/styles and uses no third-party analytics, browser token storage, or embedded account credentials. Phone/watch pairing remains later work; the helper currently opens setup on the configured computer.
+
+The browser flow was tested in an isolated local Workerd/D1 instance using synthetic credentials: failed sign-in, successful connection, renewal/read, password clearing, and sign-out passed. Live HTTPS tests verified one-time exchange/replay rejection, authenticated status, cross-origin rejection, server renewal/read, watch-role separation, and logout revocation. Existing RSS/audio and manifest checks still passed. No real password was needed for these tests and no played-status write was enabled.
+
+## Local terminal connection
 
 Run the following in an interactive local terminal, supplying the exact manual playlist name.
 
@@ -56,7 +72,7 @@ Run the following in an interactive local terminal, supplying the exact manual p
 python cloudflare-worker/connect_account.py --playlist Run
 ```
 
-The password is hidden and stays in the local process. The script signs into Pocket Casts, resolves the playlist's stable ID, verifies renewal, then sends the access/refresh session to the configured Worker using the admin credential. The Worker encrypts it with AES-GCM before storing it in D1. The script also forces one server-side renewal and playlist read. Its local report contains counts/status only. A phone/browser account setup page can replace this developer command later.
+The password is hidden and stays in the local process. The script signs into Pocket Casts, resolves the playlist's stable ID, verifies renewal, then sends the access/refresh session to the configured Worker using the admin credential. The Worker encrypts it with AES-GCM before storing it in D1. The script also forces one server-side renewal and playlist read. Its local report contains counts/status only. This remains available as a developer alternative to browser setup.
 
 The adapter isolates the unofficial account endpoints. It refreshes access tokens before expiry, saves rotated refresh tokens with a fenced lease, and exposes reconnect status after rejected authentication. A failed source refresh uses the last good snapshot; R2 uploads remain usable independently. The current account read is capped at 32 playlist entries and size-probes up to three unplayed items per refresh. Larger playlists and request caching need another pass before broader distribution.
 
@@ -69,8 +85,14 @@ The adapter isolates the unofficial account endpoints. It refreshes access token
 | `GET /v1/admin/status` | Admin | Connection and delivery counts |
 | `POST /v1/admin/pocket-casts/session` | Admin | Store/reconnect an encrypted renewable session |
 | `POST /v1/admin/pocket-casts/check` | Admin | Force renewal and read the selected playlist; safe failure category |
+| `GET /setup` | None | Public setup shell, with no account data |
+| `POST /v1/admin/setup-links` | Admin | Issue a signed, single-use five-minute setup code |
+| `POST /v1/setup/session` | Setup code + same origin | Consume the code and issue a browser session |
+| `GET /v1/admin/browser-session` | Browser session | Read the session-specific CSRF value |
+| `DELETE /v1/admin/browser-session` | Browser session + CSRF | Revoke current setup access |
+| `POST /v1/admin/pocket-casts/connect` | Admin or browser session + CSRF | Sign in, select the playlist, verify renewal, and replace the encrypted session |
 
-Requests use `Authorization: Bearer …`; tokens do not belong in query strings. POST bodies are JSON and limited to 64 KiB. The watch sync uses `protocol_version: 1` plus the [core input fields](../backend-core/README.md). Public queue entries omit account UUID mappings. The watch must retain events until their IDs appear in `acknowledged_event_ids`.
+Watch and terminal requests use `Authorization: Bearer …`; tokens do not belong in query strings. Browser admin requests use the protected cookie plus origin/CSRF validation for mutations. POST bodies are JSON and limited to 64 KiB; account sign-in is limited to 8 KiB and setup-code exchange to 1 KiB. The watch sync uses `protocol_version: 1` plus the [core input fields](../backend-core/README.md). Public queue entries omit account UUID mappings. The watch must retain events until their IDs appear in `acknowledged_event_ids`.
 
 Played-status delivery is deployed **disabled** with `POCKET_CASTS_WRITEBACK_ENABLED=false`. Completion ingestion remains durable; enabling delivery later drains the retained outbox through read-before/write/read-after checks. Keep it disabled until the physical watch's completion, pause, skip, reboot, and cache-recovery checks pass. No Cron Trigger is installed. Delivery currently retries when an authenticated sync schedules one due item.
 

@@ -8,6 +8,7 @@ The [project plan](PROJECT_PLAN.md) starts with two independent feasibility chec
 - [Pocket Casts account probe](pocket-casts-spike/README.md) covers reading the manual **Run** playlist and checking its order, enclosure URLs, and played state.
 - [Backend core](backend-core/README.md) contains the locally tested queue policy, durable completion ledger, and Pocket Casts delivery outbox prepared for the Worker integration.
 - [Cloudflare integration](cloudflare-worker/README.md) adds the live authenticated manifest, existing R2 uploads, encrypted renewable Pocket Casts sessions, and D1 completion storage. The queue client is ready for physical-watch validation.
+- [Private account setup](cloudflare-worker/README.md#private-browser-setup) opens a single-use browser link for Pocket Casts reconnection and delivery status without copying credentials or tokens into chat.
 
 The local checks run with Node 24.4 or newer and Python 3.10 or newer.
 
