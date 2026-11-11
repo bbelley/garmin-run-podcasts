@@ -2,6 +2,15 @@
   "name": "pacejams-cloudflare-integration",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test test/*.test.mjs" },
-  "devDependencies": { "wrangler": "4.158.0" }
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "jsqr": "1.4.0",
+    "omggif": "1.0.10",
+    "wrangler": "4.158.0"
+  },
+  "dependencies": {
+    "qrcode-generator": "2.0.4"
+  }
 }

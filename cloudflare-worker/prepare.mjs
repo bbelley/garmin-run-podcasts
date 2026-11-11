@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { resolve, relative, join } from "node:path";
 import { randomBytes } from "node:crypto";
+import { qrScriptSource } from "./qr-assets.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const privateRoot = join(root, ".spike-tools/cloudflare");
@@ -15,14 +16,16 @@ for (const name of ["FEED_PATH", "EPISODE_DETAILS", "REPLACEMENTS"]) {
 }
 const generated = join(privateRoot, "generated");
 mkdirSync(generated, { recursive: true });
+writeFileSync(join(generated, "qr-library.mjs"), "export default " + JSON.stringify(qrScriptSource()) + ";\n");
 writeFileSync(join(generated, "legacy.mjs"), source.replace(/^\/\/# sourceMappingURL=.*$/m, "") +
     "\nexport { FEED_PATH, EPISODE_DETAILS, REPLACEMENTS };\n");
 let integration = relative(generated, join(root, "cloudflare-worker/src/index.mjs")).replaceAll("\\", "/");
 if (!integration.startsWith(".")) integration = "./" + integration;
 writeFileSync(join(generated, "entry.mjs"), `import legacy, { FEED_PATH, EPISODE_DETAILS, REPLACEMENTS } from "./legacy.mjs";
 import { integrate } from ${JSON.stringify(integration)};
+import qrScript from "./qr-library.mjs";
 export default integrate(legacy, { feedPath: FEED_PATH, episodeDetails: EPISODE_DETAILS, replacements: REPLACEMENTS,
-    publicOrigin: ${JSON.stringify(state.public_origin)} });
+    publicOrigin: ${JSON.stringify(state.public_origin)}, qrScript });
 `);
 const secretPath = join(privateRoot, "secrets.json");
 if (!existsSync(secretPath)) {

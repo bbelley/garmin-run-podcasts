@@ -9,6 +9,7 @@ The [project plan](PROJECT_PLAN.md) starts with two independent feasibility chec
 - [Backend core](backend-core/README.md) contains the locally tested queue policy, durable completion ledger, and Pocket Casts delivery outbox prepared for the Worker integration.
 - [Cloudflare integration](cloudflare-worker/README.md) adds the live authenticated manifest, existing R2 uploads, encrypted renewable Pocket Casts sessions, and D1 completion storage. The queue client is ready for physical-watch validation.
 - [Private account setup](cloudflare-worker/README.md#private-browser-setup) opens a single-use browser link for Pocket Casts reconnection and delivery status without copying credentials or tokens into chat.
+- [Phone setup handoff](cloudflare-worker/README.md#phone-qr-handoff-prepared-locally) adds a private one-time QR link from desktop setup. It is tested locally and awaits deployment and a phone scan.
 
 The local checks run with Node 24.4 or newer and Python 3.10 or newer.
 

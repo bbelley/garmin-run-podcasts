@@ -73,6 +73,15 @@ export class BrowserSessions {
         return { cookie: sessionCookie(token), csrf_token: csrf };
     }
 
+    async revokeTicket(code) {
+        if (typeof code !== "string" || !TOKEN.test(code) || !(await this.validProof("ticket-proof", code))) {
+            throw new HttpError(400, "setup_link_invalid");
+        }
+        const result = await this.db.prepare("DELETE FROM setup_tickets WHERE token_hash=?")
+            .bind(await this.hash("ticket", code)).run();
+        return { revoked: result.meta.changes > 0 };
+    }
+
     async authorize(request) {
         secureTransport(request);
         if (request.headers.has("Authorization")) {

@@ -15,13 +15,13 @@ npm --prefix cloudflare-worker test
 python tools/test_privacy.py
 ```
 
-Tests use synthetic account data, SQLite, and mocked outbound requests. They cover endpoint authentication, body limits, R2 metadata and replacements, encrypted sessions, refresh leases and rotation, the account API's episode field, reconnect status, native fetch receivers, MP3 size discovery, and completion-only write payloads. The backend-core suite covers queue policy and delivery recovery.
+Tests use synthetic account data, SQLite, and mocked outbound requests. They cover endpoint authentication, body limits, R2 metadata and replacements, encrypted sessions, refresh leases and rotation, the account API's episode field, reconnect status, native fetch receivers, MP3 size discovery, and completion-only write payloads. Phone handoff checks independently decode the generated QR image and verify cancellation, one-time redemption, role separation, and independent session logout. The backend-core suite covers queue policy and delivery recovery.
 
 ## Private deployment configuration
 
 Live configuration lives under ignored `.spike-tools/cloudflare/`. Never commit its files or the generated bundle. `current.json` names the existing account, Worker, canonical HTTPS origin, original backup directory/modules, and approved D1 database. `secrets.json` contains separate random watch/admin tokens and the AES-GCM session key. Back up these files privately: losing the encryption key requires reconnecting Pocket Casts.
 
-Before the first deployment, export the existing Worker source, settings, and deployments into an immutable ignored backup. Review its module and bindings. `prepare.mjs` currently supports the inspected legacy handler with `FEED_PATH`, `EPISODE_DETAILS`, and `REPLACEMENTS` constants and a `PODCASTS` R2 binding. It deliberately stops for an unfamiliar layout. It generates a private wrapper, Wrangler configuration, combined schema, and local development secrets. Subsequent builds retain the saved legacy code and metadata overrides; review external changes before replacing that backup.
+Before the first deployment, export the existing Worker source, settings, and deployments into an immutable ignored backup. Review its module and bindings. `prepare.mjs` currently supports the inspected legacy handler with `FEED_PATH`, `EPISODE_DETAILS`, and `REPLACEMENTS` constants and a `PODCASTS` R2 binding. It deliberately stops for an unfamiliar layout. It generates a private wrapper, Wrangler configuration, combined schema, local development secrets, and the browser QR encoder asset with its license. Subsequent builds retain the saved legacy code and metadata overrides; review external changes before replacing that backup.
 
 ```powershell
 node cloudflare-worker/prepare.mjs
@@ -60,9 +60,17 @@ The helper opens a single-use setup link in the default browser. The link expire
 
 The page displays connection status, waiting/delivered completion counts, and whether played-status delivery is enabled. **Check connection** forces renewal and reads the selected playlist. **Connect Pocket Casts** accepts the existing account email, Pocket Casts password, and exact manual playlist name. This browser flow sends the password over HTTPS through your Worker to Pocket Casts for sign-in; PaceJams does not persist it or the email. The browser clears the password field after submission. Renewable tokens are encrypted in D1 only after sign-in, playlist selection, and renewal/read succeed. Rejected credentials or a missing playlist leave the stored session unchanged. This is a password-based connection to the unofficial account endpoints, not Pocket Casts OAuth. Production setup/admin access requires HTTPS; loopback HTTP is allowed for isolated local tests.
 
-Use the Pocket Casts password added to the existing Google/Apple account, as in the verified local probe. **Sign out of setup** revokes that browser session while leaving the watch's account connection intact. Public `/setup` pages contain no account details until authenticated. The page loads its own scripts/styles and uses no third-party analytics, browser token storage, or embedded account credentials. Phone/watch pairing remains later work; the helper currently opens setup on the configured computer.
+Use the Pocket Casts password added to the existing Google/Apple account, as in the verified local probe. **Sign out of setup** revokes that browser session while leaving the watch's account connection intact. Public `/setup` pages contain no account details until authenticated. The page loads its own scripts/styles and uses no third-party analytics, browser token storage, or embedded account credentials.
 
 The browser flow was tested in an isolated local Workerd/D1 instance using synthetic credentials: failed sign-in, successful connection, renewal/read, password clearing, and sign-out passed. Live HTTPS tests verified one-time exchange/replay rejection, authenticated status, cross-origin rejection, server renewal/read, watch-role separation, and logout revocation. Existing RSS/audio and manifest checks still passed. No real password was needed for these tests and no played-status write was enabled.
+
+### Phone QR handoff (prepared locally)
+
+The next Worker build adds **Show phone setup code** to an authenticated setup page. Scan it with the phone camera within five minutes, or copy its private link. Opening it consumes the code and creates a separate one-hour setup session on the phone. **Close code** cancels an unused link. Once the phone has opened it, sign out on the phone to revoke that session; desktop sign-out leaves it independent. Treat the displayed code/link as private setup access and keep it out of screenshots or shared messages.
+
+The browser generates the image using the bundled `qrcode-generator` distribution served from `/setup/qr.js`. No link is sent to an external QR service. Only the existing short-lived setup ticket appears in the link fragment; neither the root admin credential nor the watch credential appears there. The phone has the same setup permissions and expiry as the existing desktop session. This is a temporary handoff, with permanent pairing and the watch-to-phone shortcut still pending.
+
+All 33 Worker checks and a local Workerd bundle dry-run passed. Local browser checks verified code display, cancellation, and sign-out. Endpoint tests verify separate cookies, replay rejection, and independent logout; an independent decoder reads the actual generated QR image. A second-browser navigation was blocked by the browser tool's URL policy, so an actual phone camera scan remains to be tested. This change has not been deployed while the installed watch queue build is under test. No watch code, live account session, or delivery flag was changed for this work.
 
 ## Local terminal connection
 
@@ -86,7 +94,8 @@ The adapter isolates the unofficial account endpoints. It refreshes access token
 | `POST /v1/admin/pocket-casts/session` | Admin | Store/reconnect an encrypted renewable session |
 | `POST /v1/admin/pocket-casts/check` | Admin | Force renewal and read the selected playlist; safe failure category |
 | `GET /setup` | None | Public setup shell, with no account data |
-| `POST /v1/admin/setup-links` | Admin | Issue a signed, single-use five-minute setup code |
+| `POST /v1/admin/setup-links` | Admin or browser session + CSRF | Issue a signed, single-use five-minute setup code; `{"phone_handoff":true}` also returns the canonical `setup_url` |
+| `POST /v1/admin/setup-links/revoke` | Admin or browser session + CSRF | Cancel an unused setup code supplied as `{"code":"…"}` |
 | `POST /v1/setup/session` | Setup code + same origin | Consume the code and issue a browser session |
 | `GET /v1/admin/browser-session` | Browser session | Read the session-specific CSRF value |
 | `DELETE /v1/admin/browser-session` | Browser session + CSRF | Revoke current setup access |

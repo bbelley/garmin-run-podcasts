@@ -9,13 +9,14 @@ import { authorized, HttpError, json, readJson } from "./http.mjs";
 import { BrowserSessions } from "./browser-session.mjs";
 import { connectAccount } from "./connect-account.mjs";
 import { setupAsset } from "./setup-page.mjs";
+import { phoneHandoff } from "./phone-handoff.mjs";
 
 export function integrate(legacy, uploadConfig, fetcher = fetch) {
     fetcher = fetcher.bind(globalThis);
     return {
         async fetch(request, env, ctx) {
             const url = new URL(request.url);
-            const asset = setupAsset(request);
+            const asset = setupAsset(request, uploadConfig.qrScript);
             if (asset) return asset;
             if (!url.pathname.startsWith("/v1/")) return legacy.fetch(request, env, ctx);
             try {
@@ -43,7 +44,9 @@ export function integrate(legacy, uploadConfig, fetcher = fetch) {
                 if (request.method !== "POST") throw new HttpError(405, "method_not_allowed");
                 if (request.headers.get("Content-Type")?.split(";")[0].trim() !== "application/json") throw new HttpError(415, "json_required");
                 const input = await readJson(request, url.pathname === "/v1/admin/pocket-casts/connect" ? 8192 : 65536);
-                if (url.pathname === "/v1/admin/setup-links") return json(await browsers.createTicket());
+                if (url.pathname === "/v1/admin/setup-links") return json(input?.phone_handoff === true ?
+                    await phoneHandoff(browsers, uploadConfig.publicOrigin ?? url.origin) : await browsers.createTicket());
+                if (url.pathname === "/v1/admin/setup-links/revoke") return json(await browsers.revokeTicket(input?.code));
                 if (url.pathname === "/v1/admin/pocket-casts/connect") return json(await connectAccount(input, sessions, store, fetcher));
                 if (url.pathname === "/v1/admin/pocket-casts/session") {
                     validateSession(input);
