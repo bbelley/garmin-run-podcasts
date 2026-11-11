@@ -9,10 +9,14 @@ class PaceJamsApp extends Application.AudioContentProviderApp {
     }
 
     function getSyncDelegate() {
-        return new ClipSyncDelegate();
+        return LocalConfig.QUEUE_MODE ? new QueueSyncDelegate() : new ClipSyncDelegate();
     }
 
     function getContentDelegate(args) {
+        if (LocalConfig.QUEUE_MODE && args != true &&
+            (!(args instanceof Lang.Dictionary) || args["legacy"] != true)) {
+            return new QueueContentDelegate(args instanceof Lang.Dictionary ? args["item_id"] : null);
+        }
         return new ClipContentDelegate(args == true);
     }
 
@@ -25,6 +29,7 @@ class PaceJamsApp extends Application.AudioContentProviderApp {
     }
 
     function configurationView() {
+        if (LocalConfig.QUEUE_MODE) { return queueConfigurationView(); }
         var menu = new WatchUi.Menu2({:title => WatchUi.loadResource(Rez.Strings.AppName) as Lang.String});
         var clip = cachedClip();
         menu.addItem(new WatchUi.MenuItem("Sync Now", "Wi-Fi", :sync, null));

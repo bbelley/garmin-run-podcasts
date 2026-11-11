@@ -1,4 +1,46 @@
-# PaceJams Garmin feasibility test
+# PaceJams Garmin app and feasibility test
+
+The live queue client now uses the deployed Worker manifest. Build with `-LiveQueue` for account selections, persisted completion events, separate deletion holds, and sequential downloads. The original one-clip feasibility mode remains the default build for isolated playback experiments.
+
+## Live queue build and watch test
+
+The ignored Cloudflare configuration must already contain the canonical origin and watch token from the [Worker setup](../cloudflare-worker/README.md). The build reads them locally and compiles only the watch credential into the private app. It never includes Pocket Casts credentials or the admin token.
+
+```powershell
+.\garmin-spike\build.ps1 -LiveQueue -SdkPath .\.spike-tools\sdk
+```
+
+Use the active SDK installation instead of the workspace SDK path on a fresh machine. Keep the generated `source/LocalConfig.mc` and `.prg` private. Copy `bin/PACEJAMS.prg` to the watch's `GARMIN/APPS/OUTBACK.prg` when updating the original sideload. Keep that original filename and app ID so the watch retains its storage. A fresh install can use `PACEJAMS.prg`. USB is only for development installation; daily queue sync uses Wi-Fi.
+
+The menu title **PaceJams queue** distinguishes this build. It shows ready minutes, saved positions, unacknowledged finishes, separate Pocket Casts delivery counts, and the last sync result. Open an episode for **Play / Resume**, **Skip for now**, **Mark Finished**, or **Delete Download**. Mark Finished and Delete Download require an explicit confirmation. **Yes** returns directly to the queue, removes the affected episode immediately, and refreshes ready minutes and finish counts. **Cancel** returns to the episode's action menu without changing it. **Restore Deleted** clears download holds and refreshes the queue without closing the app. Deleting a download never creates a finish event.
+
+The client reports Garmin's actual media-cache capacity/usage and measured completed-download sizes. The initial policy uses a 256 MiB app budget and 64 MiB reserve; these are conservative starting settings to confirm on hardware. A transfer can use a 5% size margin (at least 64 KiB, at most 8 MiB), bounded by remaining budget and reserve. A larger response is canceled. Native cache limits and the publisher's audio MIME type still need real-watch confirmation. [Garmin cache statistics](https://developer.garmin.com/connect-iq/api-docs/Toybox/Media/CacheStatistics.html)
+
+An eligible existing test clip can migrate without re-downloading: the build matches its original enclosure to the saved RSS GUID and computes the same opaque upload ID as the backend. If the native cache contains that one clip, the client adopts its measured bytes and bookmark in one storage write. A nonmatching test clip remains accessible through **Previous test clip**. It is retained rather than deleted as an unidentified file.
+
+Run these hardware checks after installation. Keep Pocket Casts writeback disabled until their results are reviewed.
+
+1. Disconnect USB, keep the phone disconnected, and use saved Wi-Fi for **PaceJams queue → Sync Now**. Confirm the ready list and edited titles. The initial sync may download large podcast files; retain the watch's error message if it fails. Repeating sync should reuse ready files.
+2. Play an episode, pause at a recognizable spoken cue, leave the player, and reopen **Play / Resume**. Verify the audible position. Try native **−30s / +30s**, headphone double-tap, and **Skip for now** separately. The finish count must stay unchanged. Pause, reboot, and compare the audible resume point again.
+3. Out of range of Wi-Fi, with the phone disconnected, listen to a downloaded episode while a native **Run** records, then save the activity. Check both a publisher episode and an R2 upload. Desktop size/header checks do not prove Garmin decoding.
+4. Let a short uploaded episode finish naturally, or choose an episode you deliberately want to **Mark Finished**. For the manual action, **Yes** should immediately return to the queue with that episode absent and the pending count increased once, without closing/reopening PaceJams. **Cancel** should leave the episode and counts unchanged. Completion should persist through reboot. The next successful sync should acknowledge it, reclaim the file, and top up the queue. A matched Pocket Casts item remains in the server delivery outbox while writeback is disabled; an unmatched upload has independent completion state.
+5. Delete a different download. **Yes** should immediately return to the refreshed queue, with that episode absent and no new finish event; deleting the last episode should show zero ready minutes. Sync: it must remain unplayed and stay held until **Restore Deleted**. Cancel a download or interrupt Wi-Fi: existing ready audio and pending finishes must survive, and the next sync must clean up/retry the incomplete transfer. Check low-space recovery without manually filling the device with disposable files.
+
+Reconnect USB to collect the existing `GARMIN/APPS/LOGS/OUTBACK.TXT` log (or matching fresh-install filename). Relevant lines begin `PaceJams queue sync`, `PaceJams queue download`, and `PaceJams queue song`. They record cache bytes, response codes, callback values, positions, and pending counts without titles, account tokens, or audio URLs. Record firmware from **System → About** alongside the build and test observations. A successful sync acknowledgement is distinct from a delivered Pocket Casts update.
+
+## Simulator checks
+
+```powershell
+.\garmin-spike\test.ps1 -SdkPath .\.spike-tools\sdk
+```
+
+This builds a separate test PRG, runs Monkey C tests on `fr255sm`, and restores the previous private source configuration afterward. It uses an isolated test storage key and mocked native download/network boundaries. The runner checks the printed test result because Garmin's `monkeydo` can return exit code zero after test failures. On this machine, loopback tests worked without adding an inbound firewall exception; Public network access is unnecessary for these checks.
+
+After refreshing the ignored live manifest with `python cloudflare-worker/live_ops.py verify`, add `-LiveContract` to compile a private, network-free fixture of that exact response. Its generated source and account-specific metadata remain under ignored `bin/private-tests/`.
+
+Eighteen synthetic simulator checks passed for bookmarks (including zero), natural completion deduplication, restart persistence, acknowledgement ordering, failed-sync retention, deletion holds, atomic storage failure, transfer journals, long byte counts, legacy migration, storage-full retry, canceled/late callbacks, oversize cancellation, and immediate confirmation/menu updates. An additional private live-manifest contract check passed. These tests simulate native I/O and navigation and do not verify Wi-Fi audio download, native decoding, or recorded-Run playback on hardware.
+
+## One-clip feasibility mode
 
 This Audio Content Provider uses the native Garmin player. **Sync Now** downloads one MP3 into the provider's media cache. **Play Test Clip** plays the clip once and exposes Garmin's default 30-second back and forward controls. It saves a bookmark on pause or stop and requests that position when reopened. **Test Next Track** offers two slots backed by the same cached file so you can check track skipping separately. The menu displays a count stored on the watch, and only a `SONG_EVENT_COMPLETE` callback increments it. [Garmin playback profile](https://developer.garmin.com/connect-iq/api-docs/Toybox/Media/PlaybackProfile.html)
 
@@ -46,6 +88,8 @@ An offline playback pass requires audible playback while a native Run is recordi
 For a long MP3, pause after a recognizable spoken cue several minutes in, reopen playback, and compare the audible position with that cue. Repeat after rebooting while the bookmark is still set. Check the audio even if the displayed timestamp looks correct. [Garmin ActiveContent API](https://developer.garmin.com/connect-iq/api-docs/Toybox/Media/ActiveContent.html)
 
 ## Verification
+
+The first queue-build hardware feedback identified stale menu rows after confirming Mark Finished or Delete Download. The state took effect after reopening PaceJams, but the open menu did not refresh. The fix rebuilds that existing menu and closes both the confirmation and episode-action views. Simulator regressions cover the real Menu2 row/count changes, deleting the last episode, cancellation, and failed saves. Native navigation is mocked in these tests because the unit runner does not process screen transitions during a test. A new signed build is prepared; the return-to-queue behavior still needs confirmation on the watch after updating it.
 
 Connect IQ 9.3.0 compiled and signed the provider for `fr255sm` after SDK Manager installed the device profile. The build used the workspace SDK copy (`-SdkPath .\.spike-tools\sdk`) because the sandbox could not write the compiler cache in the SDK Manager installation. The public test clip returned HTTP 200 with `audio/mpeg` and an MP3 header.
 
